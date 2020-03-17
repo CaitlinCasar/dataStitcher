@@ -1,6 +1,6 @@
 pacman::p_load(spatstat, geostatsp, maptools, cluster, stringr, smoothr, sf, lwgeom, units, raster, rgeos, imager,ggnewscale,  magick, stars, fasterRaster, ggplot2, cowplot, tidyverse, rgdal, rasterVis)
 
-path <- "example_dataset"
+path <- "example_dataset/S"
 
 files <- dir(path, pattern = "*.tif") # get file names
 files <- paste(path, '/', files, sep="")
@@ -16,6 +16,7 @@ for(i in 1:length(files)){
     temp_file <- tempfile()
     image_write(image, path = temp_file, format = 'tiff')
     image <- raster(temp_file)
+    image <- aggregate(image, fact=4)
     image_extent <- extent(matrix(c(xy$x[i], xy$x[i] + 1024, xy$y[i], xy$y[i]+704), nrow = 2, ncol = 2, byrow = T))
     image_raster <- setExtent(raster(nrows = 704, ncols = 1024), image_extent, keepres = F)
     values(image_raster) <- values(image)
