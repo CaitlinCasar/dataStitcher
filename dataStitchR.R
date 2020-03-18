@@ -5,27 +5,16 @@ print("This script was created by Caitlin Casar. DataStitchR stitches panoramic 
       x-ray energy dispersive spectroscopy.")
 
 #load dependencies 
-print("Loading script dependencies: optparse, raster, rdgal, magick, tidyverse, rasterVis, ggnewscale...")
-pacman::p_load(optparse, raster, rdgal, magick, tidyverse, rasterVis, ggnewscale)
+print("Loading script dependencies: raster, rdgal, magick, tidyverse, rasterVis, ggnewscale, Hmisc...")
+pacman::p_load(raster, rdgal, magick, tidyverse, rasterVis, ggnewscale, Hmisc)
 print("...complete.")
-
-option_list = list(
-  make_option(c("-f", "--file"), type="character", default=NULL, 
-              help="dataset file name", metavar="character"),
-  make_option(c("-o", "--out"), type="character", default="out.txt", 
-              help="output file name [default= %default]", metavar="character")
-); 
-
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser);
-
 
 #user should run this script in the appropriate directory 
 setwd("~/Desktop/dataStitcher/example_dataset")
 
 #create list all sub-directories within main directory
 directories <- list.files(full.names = F , recursive =F)
-directories <- directories[!str_detect(directories, "Unknown|Os|SEM|.tif")]
+directories <- directories[!str_detect(directories, "Unknown|Os|SEM|.tif|.pdf")]
 positions <- str_extract(dir("SEM_images", pattern = "*.tif"),  "-?\\d") 
 
 #set image coordinates
@@ -128,7 +117,7 @@ print("...complete.")
 print("Writing brick...")
 sample_id <- str_extract(getwd,"([^/]+$)")
 
-x <- writeRaster(xray_brick, paste0(sample_id,'.tif'), overwrite=TRUE, format="GTiff",options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
+x <- writeRaster(xray_brick, paste0(sample_id,'_brick.tif'), overwrite=TRUE, format="GTiff",options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
 
 print("...complete.")
 
@@ -144,6 +133,7 @@ remove(list = c("x", "xray_brick_list", "xray_data", "empty_raster", "empty_rast
 print("Generating plot...")
 # Set color palette
 
+#palette source: https://sciencenotes.org/molecule-atom-colors-cpk-colors/
 
 element_colors <- c("#FFFFFF", "#D9FFFF", "#CC80FF", "#C2FF00", "#FFB5B5", "#909090", "#3050F8",
                     "#FF0D0D", "#90E050", "#B3E3F5", "#AB5CF2", "#8AFF00", "#BFA6A6", "#F0C8A0",
@@ -173,19 +163,6 @@ names(element_colors) <- c("H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F", 
 xray_frame <- as.data.frame(xray_brick, xy=TRUE) %>%
      gather(element, value, Al:Si)
 
-###Testing###
-# test_frame <- xray_frame %>%
-#   filter(element == "Al" & value!=0) 
-# 
-# SEM_plot <- rasterVis::gplot(SEM_panorama_merged) +
-#   geom_tile(aes(fill = value)) +
-#   scale_fill_gradient(low = 'black', high = 'white') +
-#   ggnewscale::new_scale_fill() +
-#   geom_raster(test_frame, mapping = aes(x, y, fill = element, alpha = value)) +
-#   scale_fill_manual(values = element_colors) +
-#   ggnewscale::new_scale_fill() 
-###Testing end###
-
 
 element_plotter<-function(coord_frame, brick, SEM_image, colors){
   p <-rasterVis::gplot(SEM_image) +
@@ -203,25 +180,38 @@ element_plotter<-function(coord_frame, brick, SEM_image, colors){
   print("Writing plot...")
   suppressWarnings(print(p + 
                            coord_fixed() +
-                           guides(col = guide_legend(ncol = 3)) +
                            theme(axis.title = element_blank(),
                                  axis.text = element_blank(),
-                                 legend.position = "bottom",
-                                 legend.title = ggplot2::element_blank(), 
-                                 legend.text = ggplot2::element_text(size = 8),
-                                 legend.key.size = unit(0.25, "cm"))))
+                                 legend.position = "none")))
 }
 
 element_plot <- element_plotter(xray_frame, xray_brick, SEM_panorama_merged, element_colors)
-element_plot
+
+element_plot_legend <- data.frame(element = unique(xray_frame$element)) %>%
+  rownames_to_column() %>% 
+  ggplot(aes(element, rowname, fill=element)) + 
+  geom_bar(stat= "identity") + 
+  scale_fill_manual(values = element_colors) +
+  guides(fill=guide_legend(nrow=2)) +
+  theme(legend.title = ggplot2::element_blank(),
+        legend.text = ggplot2::element_text(size = 8))
+
+element_plot_with_legend <- plot_grid(
+  element_plot, 
+  plot_grid(get_legend(element_plot_legend), 
+            ncol = 1), 
+  nrow = 2, 
+  rel_heights = c(8,2)
+)
+
 
 # generate PDF ------------------------------------------------------------
 
-pdf("element_plot.pdf",
+pdf(paste0(sample_id, "_element_plot.pdf"),
     width = 13.33, 
     height = 7.5)
 
-print(element_plot)
+print(element_plot_with_legend)
 
 dev.off()
 
