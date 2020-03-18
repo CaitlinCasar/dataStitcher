@@ -1,8 +1,12 @@
 #!/usr/bin/env Rscript
 
+#foreword 
+print("This script was created by Caitlin Casar. DataStitchR stitches panoramic images of SEM images coupled to 
+      x-ray energy dispersive spectroscopy.")
+
 #load dependencies 
 print("Loading script dependencies: optparse, raster, magick, tidyverse, rasterVis, randomcoloR...")
-pacman::p_load(optparse, raster, magick, tidyverse, rasterVis, randomcoloR)
+pacman::p_load(optparse, raster, magick, tidyverse, rasterVis, randomcoloR, ggnewscale)
 print("...complete.")
 
 option_list = list(
@@ -71,8 +75,7 @@ for(j in 1:length(directories)){
   files <- files[!str_detect(files, "overview")]
   if(length(files) >0){
     xray_data[[j]] <- path
-    print(paste0("Processing element ", j, " of ", length(directories), "..."))
-    print(paste0("Stitching ", xray_data[[j]], " data..."))
+    print(paste0("Stitching ", xray_data[[j]], " data (element ", j, " of ", length(directories), ")..."))
     xy_id <- which(positions %in% str_extract(files, "-?(?<![Kα1||Kα1_2])\\d+"))
     panorama <- list()
     for(i in 1:length(files)){
@@ -95,7 +98,7 @@ for(j in 1:length(directories)){
       #print("...final raster complete.")
       panorama[[xy_id[i]]] <- image_raster
       #print("...appended to panorama queue.")
-      print(paste0("...image ", i, " of ", length(files), " complete."))
+      #print("...complete.")
     }
     #if(length(compact(panorama))>1){
       empty_xy_id <- which(!positions %in% str_extract(files, "-?(?<![Kα1||Kα1_2])\\d+"))
@@ -112,48 +115,107 @@ for(j in 1:length(directories)){
       #print("...raster stitching complete.")
       xray_brick_list[[j]] <- panorama_merged
       #print("...stitched rasters appended to brick list.")
-      print(paste0("...element ", j, " of ", length(directories), "complete."))
+      #print(paste0("...element ", j, " of ", length(directories), "complete."))
   }
 }
 
-print("Creating x-ray brick...")
+print("Stitching complete. Creating x-ray brick...")
 xray_brick <- do.call(brick, xray_brick_list)
 names(xray_brick) <- unlist(xray_data)
-print("...x-ray brick complete")
+print("...complete.")
 
 #flush everything we don't need from memory
-remove(list = c("xray_data", "empty_raster", "empty_raster_extent",
-                "i", "j", "k", "path", "positions", "temp_file", "xy_id", "xy", 
+remove(list = c("xray_brick_list", "xray_data", "empty_raster", "empty_raster_extent",
+                "i", "j", "k", "path", "positions", "xy_id", "xy", 
                 "panorama_merged", "panorama", "empty_xy_id", "files", "directories"))
 
 
+
+# plot the data -----------------------------------------------------------
+
 print("Generating plot...")
 # Set color palette
-zeroCol <-NA 
+#zeroCol <-NA 
 element_colors <- distinctColorPalette(k = length(names(xray_brick)))
 names(element_colors) <- names(xray_brick)
 
-element_theme <- list()
-for (i in 1:length(names(xray_brick))) {
-  id <- which(names(element_colors) %in% names(xray_brick)[i])
-  element_theme[[i]] <- rasterTheme(region = c(zeroCol, element_colors[[id]]))
+xray_frame <- as.data.frame(xray_brick, xy=TRUE) %>%
+     gather(element, value, Al:Si)
+
+###Testing###
+test_frame <- xray_frame %>%
+  filter(element == "Al" & value!=0) 
+
+SEM_plot <- rasterVis::gplot(SEM_panorama_merged) +
+  geom_tile(aes(fill = value)) +
+  scale_fill_gradient(low = 'black', high = 'white') +
+  ggnewscale::new_scale_fill() +
+  geom_raster(test_frame, mapping = aes(x, y, fill = element, alpha = value)) +
+  scale_fill_manual(values = element_colors) +
+  ggnewscale::new_scale_fill() 
+###Testing end###
+
+
+element_plotter<-function(coord_frame, brick, SEM_image, colors){
+  p <-rasterVis::gplot(SEM_image) +
+    geom_tile(aes(fill = value)) +
+    scale_fill_gradient(low = 'black', high = 'white') +
+    ggnewscale::new_scale_fill()
+  for(i in unlist(names(brick))){ 
+    element_coords <- coord_frame %>%
+      filter(element == names(brick[[i]]) & value!=0)
+    p<-p+geom_raster(element_coords, mapping = aes(x, y, fill = element, alpha = value)) +
+      scale_fill_manual(values = colors) +
+      ggnewscale::new_scale_fill()
+    break
+  }
+  suppressWarnings(print(p + coord_fixed()))
 }
 
-SEM_plot <- levelplot(SEM_panorama_merged, par.settings = GrTheme, margin = FALSE)
-xray_plots <- list()
-for(n in 1:length(names(xray_brick))){
-  assign(paste(names(xray_brick)[n], "plot", sep = "_"), 
-         levelplot(xray_brick[[n]], par.settings = element_theme[[n]], margin = FALSE, alpha.regions = 0.35))
-  xray_plots[[n]] <- paste(names(xray_brick)[1], "plot", sep = "_")
-}
+element_plotter(xray_frame, xray_brick, SEM_panorama_merged, element_colors)
 
-eval(parse(text=paste0("SEM_plot", xray_plots, collapse = "+")))
 
-write.table(df_out, file=opt$out, row.names=FALSE)
+# generate PDF ------------------------------------------------------------
+
+pdf(opt$out,
+    width = 13.33, 
+    height = 7.5)
+
+print(element_plot)
+
+dev.off()
+
 print("...complete.")
 
 
 # old plotting code ----------------------------------------------------------------
+
+#level plot
+# element_theme <- list()
+# for (i in 1:length(names(xray_brick))) {
+#   id <- which(names(element_colors) %in% names(xray_brick)[i])
+#   element_theme[[i]] <- rasterTheme(region = c(zeroCol, element_colors[[id]]))
+# }
+# 
+# SEM_plot <- levelplot(SEM_panorama_merged, par.settings = GrTheme, margin = FALSE)
+# xray_plots <- list()
+# for(n in 1:length(names(xray_brick))){
+#   assign(paste(names(xray_brick)[n], "plot", sep = "_"), 
+#          levelplot(xray_brick[[n]], par.settings = element_theme[[n]], margin = FALSE, alpha.regions = 0.35))
+#   xray_plots[[n]] <- paste(names(xray_brick)[n], "plot", sep = "_")
+# }
+# 
+# eval(parse(text=paste0(c("SEM_plot", unlist(xray_plots)), collapse = "+")))
+
+
+
+
+
+
+
+
+
+
 # xray_frame <- as.data.frame(xray_brick, xy=TRUE) %>%
 #   gather(element, value, Al:Si)
 # 
