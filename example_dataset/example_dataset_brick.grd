@@ -1,0 +1,25 @@
+[general]
+creator=R package 'raster'
+created=2020-03-18 18:55:33
+[georeference]
+nrows=744
+ncols=5305
+xmin=0
+ymin=0
+xmax=5305
+ymax=744
+projection=+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0
+[data]
+datatype=FLT4S
+byteorder=little
+nbands=15
+bandorder=BIL
+minvalue=0:0:0:0:0:0:0:0:0:0:0:0:0:0:0
+maxvalue=0.375:0.1875:0.125:0.5625:0.5625:0.125:0.125:0.4375:0.375:0.25:0.3125:0.375:0.25:0.8125:0.625
+nodatavalue=-3.4e+38
+[legend]
+legendtype=
+values=
+color=
+[description]
+layername=Al:Ba:C:Ca:Fe:Hg:Ir:K:Mg:Mn:Na:O:P:S:Si
