@@ -76,7 +76,7 @@ if(!is.na(opt$a)){
 
 
 #set image coordinates
-xy <- read_delim(opt$c, delim = "\t")
+xy <- read_delim(opt$c, delim = "\t", col_types = cols())
 positions <- xy %>%
   select(-x, -y)
 
