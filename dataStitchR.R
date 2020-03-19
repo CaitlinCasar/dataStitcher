@@ -20,7 +20,7 @@ message("
 
         ")
 
-message("DataStitchR was created by Caitlin Casar and is maintained at github.com/CaitlinCasar .
+message("DataStitchR was created by Caitlin Casar and is maintained at github.com/CaitlinCasar/dataStitchR.
         ")
 message("DataStitchR stitches panoramic images of SEM images coupled to x-ray energy dispersive spectroscopy.
         ")
@@ -134,8 +134,9 @@ message("...complete.")
 #write the brick 
 message("Writing brick...")
 
+
 if(!is.na(opt$o)){
-  dir.create(opt$o)
+  dir.create(opt$o, overwrite	= T)
   if(!is.na(opt$n)){
     out_brick <- writeRaster(xray_brick, paste0(opt$o, "/", opt$n,"_brick.grd"), overwrite=TRUE, format="raster")
     x <- writeRaster(xray_brick, paste0(opt$o, "/", opt$n,"_brick.tif"), overwrite=TRUE, format="GTiff",options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
@@ -233,7 +234,7 @@ names(element_colors) <- c("H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F", 
                            "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt")
 
 xray_frame <- as.data.frame(xray_brick, xy=TRUE) 
-xray_frame <- gather(element, value, colnames(xray_frame)[3]:colnames(xray_frame)[ncol(xray_frame)])
+xray_frame <- gather(xray_frame, element, value, colnames(xray_frame)[3]:colnames(xray_frame)[ncol(xray_frame)])
 
 
 
