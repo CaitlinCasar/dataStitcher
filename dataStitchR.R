@@ -143,8 +143,8 @@ names(element_colors) <- c("H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F", 
                            "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U",  "Np", "Pu", "Am", "Cm", "Bk", "Cf",
                            "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt")
 
-xray_frame <- as.data.frame(xray_brick, xy=TRUE) %>%
-     gather(element, value, Al:Si)
+xray_frame <- gather(element, value, colnames(xray_frame)[3]:colnames(xray_frame)[ncol(xray_frame)])
+
 
 
 element_plotter<-function(coord_frame, brick, SEM_image, colors){
