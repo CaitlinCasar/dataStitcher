@@ -5,7 +5,8 @@
 #19 March 2020
 #DataStitchR stitches panoramic images of SEM images coupled to x-ray energy dispersive spectroscopy.
 
-# usage: ./dataStitchR.R -x "Unknown|Os|SEM"
+# usage: ./dataStitchR. -f "/Users/Caitlin/Desktop/dataStitcher/example_dataset" -b "/Users/Caitlin/Desktop/dataStitcher/example_dataset/SEM_images" -c "/Users/Caitlin/Desktop/dataStitcher/coordinates.txt" -z ".tif" -m ".tif" -a "Unknown|Os|SEM" -d "overview" -y "overview" -p TRUE -o "example" -n "example"
+# usage Rscript dataStitchR.R -f "/Users/Caitlin/Desktop/dataStitcher/example_dataset" -b "/Users/Caitlin/Desktop/dataStitcher/example_dataset/SEM_images" -c "/Users/Caitlin/Desktop/dataStitcher/coordinates.txt" -z ".tif" -m ".tif" -a "Unknown|Os|SEM" -d "overview" -y "overview" -p TRUE -o "example" -n "example"
 
 message("
                                         #####                                    ######  
@@ -19,9 +20,10 @@ message("
 
         ")
 
-message("DataStitchR was created by Caitlin Casar.")
-message("This script is maintained at github.com/CaitlinCasar")
-message("DataStitchR stitches panoramic images of SEM images coupled to x-ray energy dispersive spectroscopy.")
+message("DataStitchR was created by Caitlin Casar and is maintained at github.com/CaitlinCasar .
+        ")
+message("DataStitchR stitches panoramic images of SEM images coupled to x-ray energy dispersive spectroscopy.
+        ")
 message("For help, run 'dataStitchR.R --help'.
         
         
@@ -92,11 +94,11 @@ for(j in 1:length(directories)){
   }
   if(length(files) >0){
     xray_data[[j]] <- path
-    print(paste0("Stitching ", str_extract(xray_data[[j]], "([^/]+$)"), " data (element ", j, " of ", length(directories), ")..."))
+    message(paste0("Stitching ", str_extract(xray_data[[j]], "([^/]+$)"), " data (element ", j, " of ", length(directories), ")..."))
     xy_id <- which(positions[[1]] %in% str_extract(files, opt$u))
     panorama <- list()
     for(i in 1:length(files)){
-      print(paste0("Processing image ", i, " of ", length(files), "..."))
+      message(paste0("Processing image ", i, " of ", length(files), "..."))
       image <- files[i] %>% image_read() %>% 
         image_quantize(colorspace = 'gray') %>% 
         image_equalize() 
@@ -124,13 +126,13 @@ for(j in 1:length(directories)){
   }
 }
 
-print("Stitching complete. Creating x-ray brick...")
+message("Stitching complete. Creating x-ray brick...")
 xray_brick <- do.call(brick, xray_brick_list)
 names(xray_brick) <- unlist(xray_data)
-print("...complete.")
+message("...complete.")
 
 #write the brick 
-print("Writing brick...")
+message("Writing brick...")
 
 if(!is.na(opt$o)){
   dir.create(opt$o)
@@ -152,7 +154,7 @@ if(!is.na(opt$o)){
 }
 
 
-print("...complete.")
+message("...complete.")
 
 #flush everything we don't need from memory
 remove(list = c("x", "xray_brick_list", "xray_data", "empty_raster", "empty_raster_extent",
@@ -166,7 +168,7 @@ if(opt$p){
 if(!is.na(opt$b)){
   SEM_images <- list.files(opt$b, full.names = T, pattern = opt$m)
 }else{
-  print("Please provide a file path for your SEM images to stitch. For help, see 'dataStitchR.R --help.'")
+  message("Please provide a file path for your SEM images to stitch. For help, see 'dataStitchR.R --help.'")
   break
 }
 
@@ -175,7 +177,7 @@ if(!is.na(opt$y)){
 }
 SEM_panorama <- list()
 
-print("Stitching SEM images into panorama...")
+message("Stitching SEM images into panorama...")
 for(i in 1:length(SEM_images)){
   image <- SEM_images[i] %>% image_read() %>%
     image_quantize(colorspace = 'gray') %>%
@@ -189,7 +191,7 @@ for(i in 1:length(SEM_images)){
   SEM_panorama[[i]] <- image_raster
 }
 SEM_panorama_merged <- do.call(merge, SEM_panorama)
-print("...complete.")
+message("...complete.")
 
 #flush everything we don't need from memory
 remove(list = c("SEM_panorama", "SEM_images", "image", "image_extent", "image_raster"))
@@ -200,7 +202,7 @@ remove(list = c("SEM_panorama", "SEM_images", "image", "image_extent", "image_ra
 
 # plot the data -----------------------------------------------------------
 
-print("Generating plot...")
+message("Generating plot...")
 # Set color palette
 
 #palette source: https://sciencenotes.org/molecule-atom-colors-cpk-colors/
@@ -241,14 +243,14 @@ element_plotter<-function(coord_frame, brick, SEM_image, colors){
     scale_fill_gradient(low = 'black', high = 'white') +
     ggnewscale::new_scale_fill()
   for(i in names(brick)){ 
-    print(paste0("Adding ", names(brick[[i]]), " to plot..."))
+    message(paste0("Adding ", names(brick[[i]]), " to plot..."))
     element_coords <- coord_frame %>%
       filter(element == names(brick[[i]]) & value!=0)
     p <- p+geom_raster(element_coords, mapping = aes(x, y, fill = element, alpha = value)) +
       scale_fill_manual(values = colors) +
       ggnewscale::new_scale_fill()
   }
-  print("Writing plot...")
+  message("Writing plot...")
   suppressWarnings(print(p + 
                            coord_fixed() +
                            theme(axis.title = element_blank(),
@@ -305,7 +307,7 @@ print(element_plot_with_legend)
 
 dev.off()
 
-print("...complete.")
+message("...complete.")
 
 remove(list = ls())
 
