@@ -136,7 +136,7 @@ message("Writing brick...")
 
 
 if(!is.na(opt$o)){
-  dir.create(opt$o, overwrite	= T)
+  dir.create(opt$o)
   if(!is.na(opt$n)){
     out_brick <- writeRaster(xray_brick, paste0(opt$o, "/", opt$n,"_brick.grd"), overwrite=TRUE, format="raster")
     x <- writeRaster(xray_brick, paste0(opt$o, "/", opt$n,"_brick.tif"), overwrite=TRUE, format="GTiff",options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
