@@ -93,8 +93,8 @@ for(j in 1:length(directories)){
     files <- files[!str_detect(files, opt$d)]
   }
   if(length(files) >0){
-    xray_data[[j]] <- path
-    message(paste0("Stitching ", str_extract(xray_data[[j]], "([^/]+$)"), " data (element ", j, " of ", length(directories), ")..."))
+    xray_data[[j]] <- str_extract(path, "([^/]+$)")
+    message(paste0("Stitching ",xray_data[[j]], " data (element ", j, " of ", length(directories), ")..."))
     xy_id <- which(positions[[1]] %in% str_extract(files, opt$u))
     panorama <- list()
     for(i in 1:length(files)){
